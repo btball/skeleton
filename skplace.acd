@@ -1,0 +1,31 @@
+# Locations are defined here.
+#
+place +LIMBO
+   Yer are in Limbo!
+  %You are in the Limbo - the place of all things and creatures
+   not (yet) born into the world. 
+
+   By convention it should be the first declared location, so that
+   iterating through locations from Limbo to Ylem spans all game locations.
+
+   The only exit is out.
+#
+place +START
+   (You are in the start location.)
+  %(You are in the start location of this adventure; the only exit is west.)
+#
+PLACE +ELSEWHERE
+   (You are elsewhere)
+  %(You are NOT in the start location; the only exit is east.)
+#
+place +YLEM
+   You are in Ylem.
+  %You are in Ylem - the final resting place of things and creatures. 
+
+   By convention, Ylem should be the last declared location, so that
+   iterating through locations from Limbo to Ylem spans all game locations.
+
+   There are no exits. You knew how to get in here,
+   you should know how to get out again!
+#
+############################################################################

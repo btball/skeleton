@@ -1,0 +1,16 @@
+* Now for variables. The first lot are really pointers, even though
+* A-code makes no distinction between pointers and variables.
+*
+variable obj.ptr, place.ptr, text.ptr, text.end.ptr
+*
+* Now for the real variables.
+*
+variable status, admin
+variable turns, moves
+variable strength
+variable inventory.count
+variable points.scored, max.score, penalties, deaths
+variable hints, clock, last.ticked
+variable west.count
+#
+############################################################################

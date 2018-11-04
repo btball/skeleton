@@ -1,0 +1,104 @@
+#        Define vaious constants, binary attributes (falgs) and states.
+# 
+# Note that a degree of arbitrary decision is involved in, e.g.,
+# defining glowing and luminous as flags, rather than than state constants.
+# Each such object is likely also to have a state constan "lit", so that
+# its description can be morphed automatically.
+#
+# On the other hand, "wearable" is defined as a flag, but "worn" is a
+# state constant, specifically in order to modify the object's decsription.
+# The difference here is that one (probably) checks for the object being
+# worn when actually dealing with the object, whereas the property of
+# luminosity potentially comes into play when dealing with other
+# objects, so a flag is defined for convenience (making it possible for
+# objects to have different "lit" states, which *might* be useful). The
+# downside is that as things stand, one has to maintain the state and
+# the flag independently.
+#
+#        STATUS variable flag set.
+#
+flags    variable
+         moved         # Set by interpreter whenever we move
+         it.is.dark    # It is dark around here on this move
+         quickie       # Brief output mode in effect
+         fastmode      # Fast output mode in effect
+         fulldisplay   # Display full place description
+         detaildisplay # Display detailed place/object description
+         pls.clarify   # Signals missing object or verb
+         juggled       # Set by interpreter whenever we move an object
+         ticked        # We may have had a spontaneous event!
+         brief.now     # Force short description regardless of display mode.
+         full.now      # Force long description ditto
+         show.refnos   # For debugging: show reference numbers
+#
+#        Next, the set of bit flags related to places
+#
+flags    place
+         lit           # Place is self-illuminated
+         been.here     # We've been here at least once
+         no.back       # Can't use BACK to here
+         water.here    # Water is available here - in case you use water
+         hintable      # There may be a hint for this place
+         smartass      # He has refused spontaneous hint here
+         transit       # Objects thrown here generally wind up elsewhere
+         peaceful      # He can rest here
+         indoors       # The location is within some human-made building
+         outdoors      # The location is outdoors
+         small         # Not much room here
+#
+#        Next, the set of bit flags related to objects
+#
+flags    object
+         portable       # Object can be carried
+         seen           # We've seen the object
+         valuable       # It's a treasure - must be left in the building
+         schizoid       # It's schizoid - in 2 places at once
+         unstable       # Unstable objects get kicked from state 0
+#                       # Into state 1 the first time they're picked
+#                       #    up - applies only to objects that aren't
+#                       #    special-cased anywhere in the code.
+         npc            # This is an npc
+         mobile         # Object may relocate itself
+         openable       # Object can be opened/unlocked
+         plural         # Object should be referred to in plural
+         freebie        # Object is effectively weightless
+         heavy          # Object is heavy
+         large          # Object is large
+         wearable       # Object can be worn
+         worn           # Object is being worn
+         luminous       # Object is a light source
+         glowing        # Object is a feeble light source
+         textual        # Object can be read
+         feature        # Object is a feature of this location
+         visible        # Object is visible.
+#
+#        Define a bit flags set for the ADMIN variable
+#
+flags    variable
+         is.wiz         # He's a wizard
+         illumunatus    # Wizards may be generating their own light
+#
+#        Flag set for the HINTS variable.
+#
+flags variable
+      in.danger      # He may genuinely wish for non-existing help
+      helped.him     # The vanilla-flavoured help given
+#
+#        Generic OPENED/CLOSED/LOCKED states
+#
+state locked         # By default, openable things are locked!
+      closed
+      ajar           # Not quite opened or closed
+      opened
+#
+#        Define administrative control parameters
+#
+constant  0,  none
+          0,  min.time         # Number of minutes to wait before a restore
+         20,  hint.cost        # What each hint costs you
+         25,  hint.wait        # Pause before an autonomous hint
+         10,  max.inventory    # Maximal inventory count
+         10,  quit.penalty     # Penalty for quitting
+          7,  basic.strength   # His basic strength
+#
+############################################################################

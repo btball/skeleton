@@ -1,0 +1,249 @@
+#
+# Time to do some run-time initialisation.
+#
+init
+   local place.ptr
+#
+   say blank
+#
+# All objects start off in LIMBO! Add after the loop any explicit
+# apports for objects that have to start elsewhere.
+#
+   itobj obj.ptr
+      apport obj.ptr, limbo
+   fin
+#
+# Initialize here portability of some objects by setting their
+# PORTABLE bit.
+#
+   flag thingy, portable
+   flag coin, portable
+#
+   flag thingy, visible
+   flag coin, visible
+#
+   flag coin, valuable
+#
+   apport thingy, start
+   apport coin, elsewhere
+#
+# The following bit settings are dummy - they simply stop the
+# translator complaining about unused symbols.
+#
+   flag all, valuable
+   flag all, feature
+   flag all, npc
+   flag all, openable
+   flag all, plural
+   flag all, seen
+   flag all, unstable
+#
+#
+# Declare lit locations
+#
+   itplace place.ptr, limbo, ylem  # Loop through all locations
+      flag place.ptr, lit          # and give them some light
+   fin
+#
+   set strength, basic.strength
+   call randomise.texts  # Add a bit of variety straight away
+   move start
+   say welcome
+#
+############################################################################
+#
+# Here starts the main loop!
+#
+repeat
+   add turns, 1
+   call is.it.dark?
+   ifflag status, moved
+      unflag status, moved
+      ifflag status, it.is.dark
+      else
+         call describe.here
+      fin
+      add moves, 1
+   fin
+   iflt clock, 1
+      call events
+   else
+      ifflag here, hintable
+         add hints, 1
+         ifgt hints, hint.wait
+      call hint.logic
+         fin
+      else
+         set hints, 0
+      fin
+   fin
+#
+# Pickup and WEAR (and REMOVE, via PICKUP!) maintain INVENTORY.COUNT,
+# but just in case, calculate it ab initio. This makes one line of
+# code redundant in PICKUP - so what?
+#
+   ifflag status, juggled    # Did we pick up/drop/move anything?
+      unflag status, juggled
+      set inventory.count, 0
+      itobj obj.ptr
+         ifhave obj.ptr
+            ifflag obj.ptr, freebie
+               or
+            ifflag obj.ptr, worn
+            else
+               add inventory.count, 1
+               ifflag obj.ptr, heavy
+                  add inventory.count, 1
+               fin
+            fin
+         fin
+      fin
+   fin
+#
+# Done with own actions - get player's command and process it.
+#
+   input
+#
+# Ignore null commands.
+#
+   ifeq status, 0
+      quit
+   fin
+#
+   ifkey save
+      call save
+   fin
+#
+# Attend to default get and drop objects.
+#
+   ifeq status, 1
+      ifkey get
+         default here, portable
+      otherwise
+      ifkey drop
+         default inhand
+      fin
+   otherwise
+#
+# If one of the collective nouns given, check for an "except" clause
+# and attend to any errors in it.
+#
+   ifany all, treasure
+      ifeq arg3, badsyntax
+         quip no.except, arg3
+      fin
+      ifeq arg3, ambigword
+         quip tell.me.more, arg3
+      fin
+      ifeq arg3, badword
+         flush
+         quip no.comprende.object, arg3
+      fin
+      ifeq arg3, ambigtypo
+         quip is.it.a.typo? arg3
+      fin
+      ifany drop, down
+         call except.check
+         call drop.check, 0
+         doall inhand
+      otherwise
+      ifkey get
+         ifflag status, it.is.dark
+         else
+            call except.check
+            doall here, portable
+         else
+            quip cant.see.anything, 1
+         fin
+      fin
+   otherwise
+#
+# If appropriate, update the value of "it".
+#
+   ifge arg2, 0      
+      and
+   ifflag arg2, object
+      set it, arg2
+   fin
+#
+   ifeq arg1, badword
+      or
+   ifeq arg1, ambigword
+      ifeq arg1, badword
+         quip no.comprende, arg1
+      else
+         quip tell.me.more, arg1
+      fin
+   fin
+   ifkey say
+      call presay
+   fin
+   ifkey all
+      call check.all
+   fin
+   ifgt status, 1
+      ifeq arg2, badword
+         or
+      ifeq arg2, ambigword
+         and
+         not
+      ifinrange arg1, first.special, last.special
+         ifeq arg2, ambigword
+            quip tell.me.more, arg2
+         else
+            quip no.comprende.object, arg2
+         fin
+      fin
+   fin
+   ifkey west
+      and
+   ifkey walk
+      add west.count, 1
+      ifeq west.count, 5
+         ifis arg1, walk
+      say west.will.do, arg1
+         else
+      say west.will.do, arg2
+         fin
+      fin
+   fin
+   ifkey down
+      and
+   ifgt status, 1
+      ifflag arg2, object
+         and
+      ifflag arg2, portable
+         quip d.is.for.down
+      fin
+   fin
+   ifkey say    # Must avoid SHOUT JUMP and suchlike at windows
+      and       # And other places; we do this by only doing
+   ifgt status, 1     # At processing if verb is not SAY
+   else
+      call here
+   fin
+   ifflag arg1, place
+      ifat  arg1
+         say you.are.there
+      else
+         say dont.know.the.way
+      fin
+   else
+      ifkey left
+         quip need.a.direction
+      fin
+      call arg1
+      ifflag arg1, object
+         ifnear arg1
+           flag status, pls.clarify   # Request clarification
+           quip do.what?, arg1
+         else
+           say i.dont.see, arg1
+         fin
+      else
+         call bail.out
+      fin
+   fin
+   quit
+#
+############################################################################

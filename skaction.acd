@@ -1,0 +1,648 @@
+# Verb actions are defined here. They get called via "call arg2" from
+# the repeat loop.
+#
+# The generic "look" action. This may be preceded by any number of
+# specific ones (e.g. "action look axe") which will get only invoked if
+# that's what the player typed.
+#
+action look
+   local temp.value
+   ifflag status, it.is.dark
+      quip no.light.here
+   fin
+   ifeq status, 1
+      set temp.value, 0
+      ifflag status, fastmode
+      else
+         flag status, fulldisplay
+         set temp.value, 1
+      fin
+      call describe.here
+      unflag status, fulldisplay
+      flag here, been.here
+      quit
+   fin
+   ifflag arg2, object
+      ifnear arg2
+      else
+         quip i.dont.see, arg2
+      fin
+   else
+      ifflag arg2, place
+         ifat arg2
+         else
+      quip you.are.not.there
+         fin
+      else
+         ifflag arg2, verb
+      quip no.enlightenment
+         else
+      quip hah!
+         fin
+      fin
+   fin
+   describe arg2
+   flag arg2, seen
+   quit
+#
+############################################################################
+#
+# Catch all, in case we "proceed" in the above code.
+#
+action look
+   quip nothing.special
+#
+############################################################################
+#
+# Generic read command.
+#
+action read
+   ifeq status, 1
+      proceed
+   fin
+   ifflag arg2, textual
+   else
+      proceed
+   fin
+#
+# Insert here code for reading specific objects, or intercept the
+# generic read code with specific ones (e.g. "action read sign").
+#
+############################################################################
+#
+action quit
+   query want.to.quit?
+      add penalties, quit.penalty
+      call finis
+   fin
+   quip ok  # The call to finis never return, so this is an "else" action.
+#
+############################################################################
+#
+# Generic get.
+#
+action get
+   ifeq status, 1
+      default object
+      ifeq status, 1
+         and
+      ifflag status, it.is.dark
+         quip cant.see.anything
+      fin
+   fin
+   ifkey inventory
+      call inventory
+   fin
+   ifkey score
+      call score
+   fin
+   ifflag status, it.is.dark
+      call grope.for.it
+   fin
+   ifkey all
+      doall here, portable
+      quip no.get.all
+   fin
+   ifnear arg2
+      ifhave arg2
+         quip you.already.have, arg2
+      fin
+   else
+      quip i.dont.see, arg2
+   fin
+   ifflag arg2, portable
+   else
+      quip be.serious!
+   fin
+   set obj.ptr, arg2
+   call get.it, arg2, 1
+#
+############################################################################
+#
+# Generic drop.
+#
+action drop
+   ifeq status, 1
+      default inhand
+      ifeq status, 1    # Haven't got a unique object to drop
+         proceed
+      fin
+   fin
+   ifkey all
+      doall inhand
+   fin
+   ifflag arg2, object
+   else
+      proceed
+   fin
+   ifhave arg2
+      call check.wearing
+      call drop.it, arg2, 1
+   else
+      quip you.dont.have, arg2
+   fin
+#
+############################################################################
+#
+# Generic throw. If no "throw to" place defined, defaults to drop.
+#
+action throw
+   ifeq status, 2
+      ifflag arg2, object
+         ifhave arg2
+      and
+         ifflag here, transit
+      call check.wearing
+      call upchuck
+         fin
+      fin
+   fin
+   call drop
+#
+############################################################################
+#
+action inventory
+   local inv.count
+   set inv.count, 0
+   itobj obj.ptr
+      ifhave obj.ptr
+         ifeq inv.count, 0
+      say you.are.carrying
+         fin
+         say obj.ptr
+         ifflag obj.ptr, wearable
+      ifflag obj.ptr, worn
+         say wearing.it
+      else
+         say blank
+      fin
+         fin
+         add inv.count, 1
+      fin
+   fin
+   ifeq inv.count, 0
+      say you.are.empty.handed
+   fin
+   quit
+#
+############################################################################
+#
+action remove
+   ifeq status, 1
+      default inhand, worn
+      ifeq status, 1
+         quip nothing.to.remove
+      fin
+   fin
+   ifnear arg2
+      ifhave arg2
+         and
+      ifflag arg2, worn
+      else
+         quip you.arent.wearing, arg2
+      fin
+      set obj.ptr, arg2      # Well, not #really# picking up...
+      call get.it, arg2, 1
+      unflag arg2, worn
+   fin
+#
+############################################################################
+#
+action wear
+   ifeq status, 1
+      default inhand, wearable
+      ifeq status, 1
+         quip nothing.to.wear
+      fin
+   else
+      ifnear arg2
+      else
+         proceed
+      fin
+      ifflag arg2, wearable
+      else
+         quip you.cant.wear, arg2
+      fin
+      ifhave arg2
+      else
+         ifflag arg2, portable     # If not, why is it wearable!!!
+         else
+            quip hah!
+         fin
+         set obj.ptr, arg2
+         call get.it, arg2, none   # Let's try to pick it up
+      fin
+   fin
+   flag arg2, worn
+   sub inventory.count, 1
+   ifflag arg2, heavy 
+      sub arg2, 1 
+   fin
+   say you.did.it
+#
+############################################################################
+#
+action score
+   call get.score
+   sub points.scored, quit.penalty
+   iflt points.scored, 0
+      set points.scored, 0
+   fin
+   say should.you.quit, points.scored
+   say maximal.score, max.score
+   say turn.count.being, turns   
+   quit
+#
+############################################################################
+#
+action swear
+   say ok
+   quip swear.words
+#
+############################################################################
+#
+action yes
+   chance 30
+      quip is.that.so?
+   fin
+   chance 50
+      quip well.there.it.is
+   fin
+   quip i.see
+#
+############################################################################
+#
+action in
+   quip in.from.out
+#
+############################################################################
+#
+action out 
+   quip in.from.out
+#
+############################################################################
+#
+action terse
+   unflag status, quickie
+   flag status, fastmode
+   say terse.ok
+   quit
+#
+############################################################################
+#
+action normal
+   flag status, quickie
+   unflag status, fastmode
+   quip normal.ok
+#
+############################################################################
+#
+action verbose
+   unflag status, quickie
+   unflag status, fastmode
+   say verbose.ok
+   say blank
+   flag status, fulldisplay
+   call describe.here
+   unflag status, fulldisplay
+   quit
+#
+############################################################################
+#
+action fuck
+   quip bad.language!
+#
+############################################################################
+#
+action jump
+   quip nowhere.to.jump
+#
+############################################################################
+#
+action scream
+   quip the.scream
+#
+############################################################################
+#
+action sorry
+   quip dont.mention.it
+#
+############################################################################
+#
+action vocabulary
+   quip words.list
+#
+############################################################################
+#
+action walk
+   ifeq status, 1
+      quip which.way?, arg1
+   fin
+   ifinrange arg1, first.compass.point, last.compass.point
+      or
+   ifinrange arg2, first.compass.point, last.compass.point
+      or
+   ifinrange arg2, first.travel, last.travel
+      or
+   ifkey up
+      or
+   ifkey down
+      or
+   ifkey back
+      or
+   ifkey out
+      or
+   ifkey in
+      call arg2
+   else
+      ifflag arg2, place
+         ifat arg2
+      quip need.more.detail
+         fin
+         quip dont.know.the.way
+      fin
+      ifflag arg2, mobile
+         ifnear arg2
+      quip not.going.anywhere, arg2
+         fin
+         quip i.dont.see, arg2
+      fin
+      quip pardon?
+   fin
+#
+############################################################################
+#
+# All moves are coded as a part of the at code for individual locations.
+# If we fall through that and actually try to execute a move as a verb -
+# it cannot be done, so all we need to do is say so.
+#
+action north
+   call no.move.possible
+#
+############################################################################
+#
+action south
+   call no.move.possible
+#
+############################################################################
+#
+action up
+   call no.move.possible
+#
+############################################################################
+#
+action down
+   call no.move.possible
+#
+############################################################################
+#
+action east
+   call no.move.possible
+#
+############################################################################
+#
+action west
+   call no.move.possible
+#
+############################################################################
+#
+action northeast
+   call no.move.possible
+#
+############################################################################
+#
+action northwest
+   call no.move.possible
+#
+############################################################################
+#
+action southeast
+   call no.move.possible
+#
+############################################################################
+#
+action southwest
+   call no.move.possible
+#
+############################################################################
+#
+action find
+   ifgt status, 1
+      ifflag arg2, object
+         ifflag admin, is.wiz
+      ifhave arg2
+         quip you.have.it, arg2
+      fin
+      locate place.ptr, arg2
+      move place.ptr
+         fin
+         ifnear arg2
+      ifhave arg2
+         quip it.is.here.now
+      fin
+      quip here.somewhere
+         fin
+         quip find.it.yourself
+      fin
+      ifflag arg2, place
+         ifat arg2
+      quip you.are.there
+         fin
+         quip find.it.yourself
+      fin
+      quip what?
+   fin
+#
+############################################################################
+#
+action back
+   ifflag here, no.back
+      or
+   ifflag there, no.back
+      or
+   ifeq there, 0
+      quip cant.go.back
+   fin
+   move there
+#
+############################################################################
+#
+action use
+   quip use.too.vague
+#
+############################################################################
+#
+action save
+   local temp.value
+   ifgt min.time, 0
+      and
+      not
+   ifflag admin, is.wiz
+      say must.wait, min.time
+      query is.this.ok?
+      else
+         set temp.value, 0
+      fin
+   fin
+   ifeq temp.value, 0
+      quip ok
+   fin
+   exec 1, temp.value      # Save program image
+   ifeq temp.value, 0
+      ifflag admin, is.wiz
+         query continue.now?
+      say ok
+      quip blank
+         fin
+      fin
+      say ok
+      say blank
+      stop
+   else
+      quip cant.save
+   fin
+#
+############################################################################
+#
+action restore
+   local was.wiz
+   local how.long
+   local temp.value
+   ifflag admin, is.wiz
+      set was.wiz, 1
+   else
+      set was.wiz, 0
+   fin
+   exec 2, temp.value       # Attempt to restore image
+   ifeq temp.value, 0       # All well
+      ifeq was.wiz, 1
+         flag admin, is.wiz
+      else
+         unflag admin, is.wiz
+      fin
+      exec 8, how.long      # Get time (in minutes) since game dumped
+      ifflag admin, is.wiz  # If he's a wizard
+         or
+      ifgt how.long, min.time
+         sub turns, 1
+         query save.the.image
+      else
+         exec 3, temp.value   # Flush the image
+         fin
+         goto here
+         say ok
+         say blank
+      else
+         say too.soon, min.time
+         say blank
+         stop               # Must stop - we already did the restore!
+      fin
+   else
+      ifeq temp.value, 1    # No file, or no image
+         say no.image
+         sub turns, 1       # Let him try again
+      else                  # Checksum failed!
+         query explosion    # Well-house blew up
+            exec  3, temp.value   # Delete the record
+         fin
+         say ok
+      fin
+   fin
+   quit
+#
+############################################################################
+#
+action rest
+   ifgt status, 1
+      call restore          # They *always* type rest mygame
+   fin
+   ifflag here, peaceful
+      quip you.rest
+   fin
+   quip no.rest
+#
+############################################################################
+#
+action history
+   quip blurb
+#
+############################################################################
+#
+action forward
+   ifeq status, 1
+      quip which.way?, arg1
+   else
+      call arg2
+      quit
+   fin
+#
+############################################################################
+#
+action help
+   ifeq hints, 0
+      set hints, 1
+   fin
+   ifflag here, smartass
+   else
+      quip no.more.help
+   fin
+   call hint.logic           # Try to locate hint for here
+   ifgt hints, 0             # If no hint for this place
+      ifflag hints, in.danger   # He may really be in trouble!
+         say cant.help.you
+      else
+         ifflag hints, helped.him
+      say no.more.help
+         else
+      flag hints, helped.him
+      lda text.ptr, help.data
+      lda text.end.ptr, help.data.end
+      call keep.talking
+         fin
+      fin
+   fin
+   quit
+#
+############################################################################
+#
+action info
+   lda text.ptr, info.first
+   lda text.end.ptr, info.last
+   call keep.talking
+   quit
+#
+############################################################################
+#
+action open
+   call check.openable
+   ifgt arg2, closed
+      quip it.is.already.open, arg2
+   fin
+   ifeq arg2, locked
+#
+# You may want to check for default unlocking with whatever.
+#
+      quip it.is.locked, arg2
+   fin
+   set arg2, opened
+   say you.did.it
+#
+############################################################################
+#
+action close
+   call check.openable
+   iflt arg2, opened
+      quip it.isnt.open, arg2
+   fin
+   set arg2, closed
+#
+# You may want make certain objects lock as they shut!
+#
+   say you.did.it
+#
+############################################################################
+#
+action cross
+   quip hah!
+#
+############################################################################

@@ -1,0 +1,21 @@
+# Define the objects.
+#
+object EVERYTHING, =ALL             # Dummy for ALL handling
+#
+object TREASURE, =TR, VALUABLES     # Dummy for TREASURE porcessing
+#
+object IT, OBJECT, THEM, HIM, HER   # Dummy for IT processing.
+#
+object THINGY
+   A thingy
+  %There is some sort of a thingy here.
+  &Looking at it carefully, it would seem to be a perfectly ordinary
+   thingy of no particulr use or value.
+#
+object COIN
+   A coin
+  %There's a coin lying on the ground here!
+  &It is a somewhat worn and tarnished coin. Still, I reckon it would
+   pass as a legal tender, so we'll consider it valueable.
+#
+############################################################################

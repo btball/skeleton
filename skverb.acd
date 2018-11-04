@@ -1,0 +1,94 @@
+# Noise words are ignored by the parser.
+#
+noise    and,the,a,an,that,this,to,at,with,room
+#
+# Verbs with names prefixed by '-' are not added to the game dictionary.
+# The get used (e.g.) as "ifinrange arg1, first.special, last.special"
+#
+verb -first.special        # Mark the first one
+verb again, repeat, = r
+verb save, suspend, pause
+verb restore, load
+verb rest                  # In case players type REST MYGAME
+verb sorry, thanks
+verb say, chant, sing, utter, mumble, shout
+verb -last.special         # Mark end of special verbs
+#
+# End of verbs not requiring validation of ARG2.
+#
+# Now define directions. The equal sign (e.g. "=n") tels the game to use
+# the nearest preceding verb not so tagged, when echoing player's
+# command words.
+#
+verb -first.compass.point
+verb north, =n
+verb northeast, =ne
+verb east, =e
+verb southeast, =se
+verb south, =s
+verb southwest, =sw
+verb west, =w
+verb northwest, =nw
+verb -last.compass.point
+#
+verb up, =u, upward, above, ascend
+verb down, =d, downwards, descend
+verb in, inward, inside, enter
+verb out, outside, outdoors, exit, leave
+verb go, walk, run, travel, proceed, explore, follow, turn
+verb forward, continue, onward
+verb back, return, retreat
+verb jump, leap
+verb cross, across, over
+#
+# potential travel options
+#
+verb -FIRST.TRAVEL
+verb -LAST.TRAVEL
+#
+# Next come pseudo-objects. It is often an easier way of creating a
+# vocabulary word for something really generic (e.g. "wall"), which 
+# may need to be accepted ni a number of separate locations. An
+# alternative technique is to define an object "wall" and to apport it to
+# the current location if necessary.
+#
+verb -first.pseudo
+verb -first.general
+verb -last.pseudo
+#
+# Now for general verbs which may require clarification
+#
+verb -first.clarify
+verb get, =g, take, =t, keep, grab, hold, carry, tote
+verb drop, =dr, release
+verb open, unlock
+verb close, lock, shut
+verb hit, strike, kick
+verb wear
+verb remove
+verb read
+verb throw, =th, toss, hurl
+verb find, where, discover, locate    # Wizards can find remote things
+verb -last.clarify                    # Last clarifiable 'verb'
+#
+# Next lot does not require clarifications
+#
+verb look, =l, examine, =x, describe
+verb quit, =q, abort, stop, finish, bye, logout, =lo
+verb terse, fast
+verb normal, brief
+verb verbose, full
+verb history
+verb score, =sc
+verb inventory, =i, itinerary, itinery, list
+verb vocabulary, words, dictionary
+verb yes, =y, no
+verb help, =?, hint
+verb info, information
+verb scream
+verb fuck, piss, screw, shit, urinate, wank, bugger
+verb swear
+verb left, right
+verb use
+#
+############################################################################

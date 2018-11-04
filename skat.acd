@@ -1,0 +1,30 @@
+# Code associated with specific locations. It gets called by the "call here"
+# command within the main loop.
+#
+at limbo
+   move out, start
+   move ylem, ylem
+#
+#====================================================================
+#
+at ylem
+   move out, start
+   move limbo, limbo
+#
+#====================================================================
+#
+at start
+   move out, elsewhere, west, elsewhere
+   ifkey limbo            # Did he say "limbo"?
+      and
+   bit admin, is.wiz      # Wizards can go to limbo from here
+      move limbo
+   fin
+#
+#====================================================================
+#
+at elsewhere
+   move east, start
+   
+############################################################################
+

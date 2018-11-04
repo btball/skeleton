@@ -1,0 +1,22 @@
+# A skeleton adventure for you to develop. I've done most of the donkey
+# work for you, why not have a go at an adventure of your own?
+#
+Name     Skeleton Adventure
+Date     2009-Jul-23
+Version  3.0
+Author   Mike Arnautov
+Style    A-code 12
+#
+include  skdef
+include  skvar
+include  skobject
+include  sktext
+include  skplace
+include  skverb
+include  skproc
+include  skat
+include  skaction
+include  skmain
+#
+############################################################################
+

@@ -1,0 +1,639 @@
+# A collection of procedures.
+#
+############################################################################
+#
+# Call this proc to determine the amount of light in current location.
+# It should be called at the top of the processing loop. Any action
+# which might alter the "lit" condition (e.g. "extinguish lamp", 
+# should re-run this procedure after it's done its work.
+#
+# Note: The flag "luminous" has no meaning to the kernel -- it is 
+#       handled entirely by the A-code source. The fact that it is a
+#       flag associated with the variable "status" is purely conventional
+#       too. Your code does not need to stick with the convention.
+#
+proc is.it.dark?
+   local obj.ptr
+#
+   flag status, it.is.dark           # Assume darkness.
+   ifflag here, lit
+      unflag status, it.is.dark      # The place is illuminated           
+      proceed                        # No further checks required
+   fin
+   itobj obj.ptr, here, luminous     # Check for a luminous object
+      unflag status, it.is.dark      # Got one!
+      proceed                        # No need to check further
+   fin
+#
+#====================================================================
+#
+proc not.got, thing
+   ifflag thing, object
+      ifhere thing
+         quip not.holding, thing
+      fin
+      quip you.dont.have, thing
+   fin
+   quip hah!
+#
+#====================================================================
+#
+# Describe objects in the current location, and set "it" if possible.
+# Features (non-portable objects) are listed first, with no separating
+# blank line before them. Then comes the blank separator and the list of
+# portable objects, if any. 
+#
+# Notes:
+# 1. It's OK to have the separator even of there are no portable objects
+#    present, because by default the kernel will reduce succeeding
+#    blank lines to a single blank line.
+# 2. The "portable" and "visible" flags  are not intrinsic to the kernel.
+#    They are defined in skdef.acd and their use is handled entirely by
+#    the A-code source.
+# 3. Decisions on what constitutes "it" are entirely down to the A-code
+#    source. The kernel understands the use of "it" bit never alters
+#    its meaning.
+#
+proc here.you.can.see
+   local obj.ptr
+   local count
+#
+   itobj obj.ptr, here, visible    # Looking for visible objects...
+      flag obj.ptr, seen           # Object has been described
+      add count, 1                 # Count visible objects
+      ifflag obj.ptr, portable     # Check for portability
+      else
+         say obj.ptr               # Non-portable, so display it
+      fin
+   fin
+   say blank                       # Blank separator
+   itobj obj.ptr, here, visible    # Loop again
+      ifflag obj.ptr, portable     # Look for portable objects ...
+         say obj.ptr               # ... and describe them
+      fin
+   fin
+   say blank                       # Another separator
+#
+#====================================================================
+#
+# Describe current location and objects it contains.
+#
+# Notes:
+# 1. Remember the "evaluate-as-you-go" conditionals of A-code. A
+#    sequence of conditionals (or their negations) chained by ands and ors
+#    is evaluated sequentially: "A and B or C" is evaluated by
+#    establishing whether "A and B" is true or false, then the result
+#    is taken as the first argument of the "or C" etc...
+# 2. All flags used in this procedure are arbitrary, defined and
+#    manipulated by the A-code source and of no concern to the jernel.
+#
+proc describe.here
+#
+   ifflag status, it.is.dark       # Check for place being lit
+      quip its.dark.here           # Comment and abort command processing
+   fin
+   ifflag here, been.here          # If been here before and quickie mode
+      and
+   ifflag status, quickie
+      or
+   ifflag status, fastmode         # Or in fast mode
+      or
+   ifflag status, brief.now        # Or if we are told to be brief anyway
+      say here                     # Give short description
+   else
+      describe here                # Otherwise give a long one
+   fin
+   flag here, been.here            # Note that we've been here
+   call here.you.can.see           # List objects that are visible here.
+#
+#====================================================================
+#
+# Calculate current score and current maximally possible score.
+# (Stub routine, please expand as required).
+#
+proc get.score
+   set points.scored, 0
+   set max.score, 0
+#
+# Insert here code which calculates the actual score achieved by the
+# player, as well as that the maximal score he could have achieved.
+# E.g. give him X points for every treasure stored in the correct place,
+# while adding the same amount to max.score for every treasure that
+# could be stored there, whether it is there or not.
+#
+   sub points.scored, penalties # There may not be any, of course
+   iflt points.scored, 0
+      set points.scored, 0
+   fin
+#
+#====================================================================
+#
+# Exit the game.
+#
+proc finis
+#
+   call get.score
+   say you.scored, points.scored
+   say maximal.score, max.score
+   say turn.count.being, turns
+   iflt points.scored, max.score
+      say better.luck
+   else
+      say congratulations!!
+   fin
+   say blank
+   stop
+#
+#====================================================================
+#
+# Generic code for picking up objects.
+#
+# Notes:
+# 1. If commenting on the action, this proc uses the verb as specified
+#    by the player, i.e. arg1, but the object is as supplied by the
+#    procedure call, which (at the discretion of the caller) may or may
+#    not be the command object arg2.
+# 2. The "unstable" bit has no meaning to the kernel and is manipulated
+#    entirely by the A-code source. It's purpose is to allow for objects
+#    which start in a special state, which is disturbed when the object
+#    is picked up.
+#
+proc get.it, what, comment
+   local temp.value
+#
+   ifflag what, freebie                # There is no penalty for carrying it.
+   else
+      set temp.value, inventory.count  # Take local copy if inventory count
+      add temp.value, 1                # Increment it
+      ifflag what, heavy               # If object heavy ...
+         add temp.value, 1             # ... count it double
+      fin
+      ifgt temp.value, max.inventory   # Have we exceeded the maximum?
+         quip hands.are.full           # Tell player so and abort command
+      fin
+      set inventory.count, temp.value  # Update inventory count
+   fin
+   ifflag what, unstable               # Unstable object?
+      eval temp.value, what            # Get its current value
+      ifeq temp.value, 0               # If still in its ground state ...
+         deposit what, 1               # ... up the state
+      fin
+   fin
+   get what                            # Finally, pick it up
+   ifne comment, 0                     # Are we allowed to comment?
+      quip you.did.it                   # If so, confirm the action
+   fin
+#
+#====================================================================
+#
+# Generic code for dropping things.
+#
+proc drop.it, what, comment
+#
+   drop obj.ptr
+   ifflag what, freebie
+   else
+      sub inventory.count, 1
+      ifflag what, heavy
+         sub inventory.count, 1
+      fin
+      iflt inventory.count, 0
+         set inventory.count, 0
+      fin
+   fin
+   apport what, here
+   ifne comment, none
+      quip you.did.it
+   fin
+#
+#====================================================================
+#
+# This proc gets called if command parsing failed.
+#
+proc bail.out
+   ifeq status, 1
+      ifinrange arg1, first.clarify, last.clarify
+         or
+      ifkey say
+         flag  status, pls.clarify   # Request clarification
+         quip could.you.clarify?, arg1
+      fin
+      ifinrange arg1, first.travel, last.travel
+         say dont.know.the.way
+      else
+         ifinrange arg1, first.pseudo, first.general
+            say i.dont.see, arg1
+         else
+            say what.about.it
+         fin
+      fin
+   else
+      ifflag arg2, object
+         ifnear arg2
+            say dunno.hao, arg1
+            say such.a.thing, arg2
+         else
+            say i.dont.see, arg2
+         fin
+      else
+         ifinrange arg2, first.pseudo, last.pseudo
+            ifkey hit
+               say hah!
+            else
+               ifinrange arg2, first.pseudo, first.general
+                  say i.dont.see, arg2
+               else
+                  say dunno.hao, arg1
+                  say such.a.thing, arg2
+               fin
+            fin
+         else
+            say no.understand
+         fin
+      fin
+   fin
+   quit
+#
+#====================================================================
+#
+# Echo player saying something.
+#
+proc presay
+   ifgt status, 1
+      say said, arg2
+   fin
+#
+#====================================================================
+#
+# Check the validity of a command specifying ALL as its noun.
+#
+proc check.all
+   local temp.value
+   ifkey get
+      or
+   ifkey drop
+      proceed
+   fin
+   lda temp.value, all
+   ifeq temp.value, arg1
+      quip fancy.that
+   fin
+   ifkey right          # All RIGHT - all right?
+      quip good
+   fin
+   say bad.all.1, arg1
+   quip bad.all.2, arg2
+#
+#====================================================================
+#
+# Generic code for throwing things to other locations.
+#
+proc upchuck
+   set text.ptr, 0
+   set place.ptr, 0
+#
+#        Check here for specific places and set the two .PTRs correspondingly.
+#
+   ifeq place.ptr, 0
+      proceed            # "Transit" ifflag set but can't find target
+   fin
+   apport arg2, place.ptr
+   say text.ptr, arg2    # Not QUIP, in case further processing required
+   quit
+#
+#====================================================================
+#
+# Check whether the specified object is worn by the player.
+#
+proc check.wearing
+   ifflag arg2, wearable
+      and
+   ifflag arg2, worn
+      quip remove.it.first, arg2
+   fin
+#
+#====================================================================
+#
+# PLayer has got himself killed, so CORONER gets called.
+#
+proc coroner
+   local temp.value
+   flush                           # In case were doing all
+   say blank
+   add deaths, 1
+   lda text.ptr, you.are.dead-2
+   add text.ptr, deaths
+   add text.ptr, deaths
+   say text.ptr
+   query null
+      add text.ptr, 1
+      say text.ptr
+      say blank
+      lda temp.value, no.resurrection
+      iflt text.ptr, temp.value
+         itobj obj.ptr
+            ifhave obj.ptr
+               drop obj.ptr
+            fin
+         fin
+         set inventory.count, 0
+         goto start
+         set there, 0
+         quit
+      fin
+   fin
+   call finis
+#
+#====================================================================
+#
+# Tell the player he can't move the way he is trying to.
+#
+proc no.move.possible
+   local word
+   ifflag status, it.is.dark
+      chance 25
+         say crunch
+         call coroner
+      fin
+      quip oof!
+   fin
+   ifkey go
+      set word, arg2
+   else
+      set word, arg1
+   fin
+   quip no.can.go, word
+#
+#====================================================================
+#
+# Disable further automatic help for this location (and possibly some
+# others).
+#
+proc wise.guy              # May need to set SMARTASS on a whole range
+   flag here, smartass      # Of locations for some hints
+#
+#====================================================================
+#
+# Code for offering hints.
+#
+proc hint.logic
+   ifflag here, smartass
+      and
+      not
+   ifkey help
+      or
+      not
+   ifflag here, hintable
+      proceed
+   fin
+   set text.ptr, 0
+#
+#        For each hintable location, if it is HERE, set TEXT.PTR to the
+#        appropriate hint query. The hint text, must be the next text in
+#        the text file (it need not have any names).
+#
+#        If no appropriate TEXT.PTR set, get out.
+#
+   ifeq text.ptr, 0
+      proceed
+   fin
+   set hints, 0
+   query text.ptr
+      say ill.give.hint, hint.cost
+      query want.hint?
+         add text.ptr, 1
+         say text.ptr
+         add penalties, hint.cost
+         unflag here, hintable
+         unflag here, smartass
+      else                   # Note that he refused our help
+         call wise.guy
+      fin
+   else
+     call wise.guy
+   fin
+#
+#====================================================================
+#
+# Display a multi-part text, querying the player after each part.
+#
+proc keep.talking
+   local iter.ptr
+   iterate iter.ptr, text.ptr, text.end.ptr
+      say iter.ptr
+      iflt iter.ptr, text.end.ptr
+         query more?
+         else
+            proceed
+         fin
+      fin
+   fin
+#
+#====================================================================
+#
+# Generic code for event handling - expand as appropriate.
+#
+proc events               # No events provided in skeleton
+   flag status, ticked
+   choose clock, 30, 40   # Default event interval
+   set last.ticked, clock
+#
+#====================================================================
+#
+# Check whether the object can be opened.
+#
+proc check.openable
+   ifeq status, 1
+      default openable
+      ifeq status, 1
+         default, inhand, openable
+         ifeq status, 1
+            call bail.out
+         fin
+      fin
+   else
+      ifflag arg2, openable
+      else
+         quip you.cant.do.that!, arg1
+      fin
+   fin
+   ifnear arg2
+   else
+      call bail.out
+   fin
+#
+#====================================================================
+#
+# Code for trying to find things in the dark.
+#
+proc grope.for.it
+   local temp.value
+   ifkey all
+      quip cant.see.anything
+   fin
+   ifflag arg2, object
+      ifhave arg2
+         or
+         not
+      ifflag arg2, portable
+         proceed
+      fin
+      set temp.value, inventory.count
+      sub temp.value, strength
+      mult temp.value, 5
+      add temp.value, 60
+      chance temp.value
+         say grope.fall, arg2
+         call coroner
+      fin
+      quip grope.miss, arg2
+   fin
+#
+#=====================================================================
+#
+proc except.check
+   local obj.ptr
+   local tmp.ptr
+   local where
+   local loot
+   local do.count
+   local except.count
+   local worn.count
+   local state
+#
+   ifkey treasure
+      set loot, 1
+   fin
+   lda where, inhand
+   ifkey get
+      set where, here
+   fin
+   itobj obj.ptr
+      set tmp.ptr, obj.ptr
+      exec 32, tmp.ptr
+      ifeq tmp.ptr, 1
+         ifany drop, down
+            ifhave obj.ptr
+            else
+               say hang.on!
+               ifflag obj.ptr, portable
+               else
+                  quip not.droppable, obj.ptr
+               fin
+               chance 50
+                  quip you.dont.have, obj.ptr
+               fin
+               call not.got, obj.ptr
+            fin
+         else
+            ifhave obj.ptr
+               quip you.have.it, obj.ptr
+            fin
+            ifnear obj.ptr
+            else
+               quip i.dont.see, obj.ptr
+            fin
+         fin
+      fin
+      ifloc obj.ptr, where
+         ifeq loot, 0
+            or
+         ifflag obj.ptr, valuable
+            and
+         ifflag obj.ptr, portable
+            ifeq tmp.ptr, 1
+               add except.count, 1
+            else
+               set state, none
+               ifkey drop
+                  and
+               ifflag obj.ptr, wearable            
+                  eval state, obj.ptr
+               fin
+               ifeq state, worn
+                  add worn.count, 1
+               else
+                  add do.count, 1
+               fin
+            fin
+         fin
+      fin
+   fin
+   ifgt do.count, 0
+      proceed
+   fin
+   ifgt worn.count, 0
+      quip no.drop.worn
+   fin
+   ifeq where, here
+      ifeq except.count, 0
+         ifeq loot, 1
+            quip, no.treasure, 0
+         fin
+         quip no.all, 0
+      fin
+      ifeq loot, 1
+         quip no.other.treasure, 0
+      fin
+      quip no.other.objects, 0
+   fin
+   ifeq except.count, 0
+      ifeq loot, 1
+         quip no.treasure, 1
+      fin
+      quip no.all, 1
+   fin
+   ifeq loot, 1
+      quip no.other.treasure, 1
+   fin
+   quip no.other.objects, 1
+#
+#====================================================================
+#
+proc drop.check, t.only
+   local obj.ptr
+   local no.drop.count
+   local state
+#
+   itobj obj.ptr, inhand
+      ifeq t.only, 0
+         or
+      ifflag obj.ptr, valuable
+         ifflag obj.ptr, wearable
+            eval state, obj.ptr
+            ifeq state, worn
+               add no.drop.count, 1
+            else
+               proceed     # There is something to drop!
+            fin
+         else
+            proceed
+         fin
+      fin
+   fin
+   ifeq no.drop.count, 0
+      ifkey treasure
+         quip no.treasure, 1
+      fin
+      quip no.all, 1
+   fin
+   quip no.drop.worn
+#
+#====================================================================
+#
+# Used to randomise the initial state of cycling texts on initialisation,
+# and also after restoring a game. Done for purely cosmetic reasons.
+#
+proc randomise.texts
+   randomise no.get.all, 0
+   randomise no.drop.all, 0
+   randomise tell.me.more, 0
+   randomise no.understand, 0
+   randomise no.comprende, 0
+   randomise no.comprende.object, 0
+   randomise no.can.go, 0
+   randomise swear.words, 0
+   randomise bad.language!, 0
+#
+#####################################################################
+
